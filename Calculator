@@ -1,0 +1,160 @@
+section .data
+  m_input db "write number", 0
+  m_prompt db "symbol(+.-./.*)", 0
+  m_invalid db "not symbol", 0
+  m_output db "result", 0
+  newline db 0x0A
+  
+section .bss
+  operation resb 1
+  number1 resd 1
+  number2 resd 1
+  buffer resd 1
+  result resd 1
+  
+section .text
+  global _start
+
+_start:
+ 
+  mov eax, m_input
+  call print_str
+  call read_int
+  mov [number1], eax
+  
+  mov eax, m_prompt
+  call print_str
+  call read_character
+  mov [operation], al
+  
+  mov eax, m_input
+  call print_str
+  call read_int
+  mov [number2], eax
+  
+   mov al, [operation]
+   cmp al, '+'
+   je add_numbers
+   cmp al, '-'
+   je sub_numbers
+   cmp al, '*'
+   je mul_numbers
+   cmp al, '/'
+   je div_numbers
+   
+   mov eax, m_invalid
+   call print_str
+   call print_newline
+   jmp exit
+   
+add_numbers:
+  mov eax, [number1]
+  add eax, [number2]
+  mov [result], eax
+  jmp p_result
+
+sub_numbers:
+  mov eax, [number1]
+  sub eax, [number2]
+  mov [result], eax
+  jmp p_result
+
+mul_numbers:
+   mov eax, [number1]
+   mov ebx,[number2]
+   mul ebx
+   mov [result], eax
+   jmp  p_result
+
+div_numbers:
+   mov eax, [number1]
+   cmp [number2], dword 0
+   je  div_zero
+   cdq
+   div dword [number2]
+   mov [result],eax
+   jmp p_result
+  
+div_zero:
+  mov eax, m_invalid
+  call print_str
+  call print_newline
+  jmp exit
+
+p_result:
+  mov eax, m_output
+  call print_str
+  mov eax, [result]
+  call print_int
+  call print_newline
+  jmp exit
+
+print_str:
+   mov edx, eax
+   mov ecx, eax
+   mov ebx, 1
+   mov eax, 4
+   int 0x80
+   ret
+   
+read_int:
+   mov eax, 3
+   mov ebx, 0
+   mov ecx, buffer
+   mov edx, 12
+   int 0x80
+   mov esi, buffer
+   xor ebx, ebx
+   xor eax,eax
+
+convert_loop:
+  mov bl, [esi]
+  cmp bl, 0x0A
+  je e_convert
+  sub bl, '0'
+  imul eax, eax, 10
+  add eax, ebx
+  inc esi
+  jmp convert_loop
+
+e_convert:
+  ret
+   
+read_character:
+  mov eax, 3
+  mov ebx, 0
+  mov ecx, operation
+  mov edx, 1
+  int 0x80
+  ret
+    
+print_newline:
+  mov eax, newline
+  call print_str
+  ret
+  
+print_int:
+  mov ecx, 10
+  mov edi, buffer
+  
+print_convert:
+  xor edx, edx
+  div ecx
+  add dl, '0'
+  dec edi
+  mov [edi],dl
+  test eax, eax
+  jnz print_convert
+  
+  mov edx, buffer + 12
+  mov edx, edi
+  mov ecx, edi
+  mov ebx, 1
+  mov eax, 4
+  int 0x80
+  ret
+  
+exit:
+   mov eax, 1
+   mov ebx, 0
+   int 0x80
