@@ -1,0 +1,39 @@
+section .data
+ array db 6, 4, 9, 5, 3, 4
+ array_len equ $ - array 
+
+section .bss
+ temp resb 1
+ 
+section .text
+  global _start
+
+_start:
+ mov eax, 4
+ mov ebx, 1
+ mov ecx, array_len
+ 
+outer_loop:
+   dec ecx
+   mov esi, array
+   mov edi, ecx
+
+inner_loop:
+     mov al,[esi]
+     mov bl,[esi + 1]
+     cmp al, bl
+     jpe no_swap
+     mov [esi], bl
+     mov [esi + 1], al
+
+no_swap:
+  inc esi
+  dec edi
+  jnz inner_loop
+  
+  cmp ecx, 1
+  jnz outer_loop
+  
+  mov eax, 1
+  xor ebx, ebx
+  int 0x80
