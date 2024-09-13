@@ -1,0 +1,91 @@
+section .data
+    prompt db 'enter the interger ', 0
+    resultmsg db 'factorial ', 0
+    newline db 0xA, 0
+
+section .bss
+    num resb 4
+    result resb 4
+
+section .text
+    global _start
+
+_start:
+    mov eax, 4            
+    mov ebx, 1             
+    mov ecx, prompt        
+    mov edx, 14              
+    int 0x80                  
+    mov eax, 3            
+    mov ebx, 0            
+    mov ecx, num              
+    mov edx, 4             
+    int 0x80                 
+    mov ecx, num
+    call strtoint
+    mov ebx, eax          
+    mov eax, 1         
+    mov ecx, ebx            
+
+factorialloop:
+    cmp ecx, 1              
+    jle endfactorial
+    mul ecx                 
+    dec ecx                 
+    jmp factorialloop
+
+endfactorial:
+    mov [result], eax        
+    mov eax, 4              
+    mov ebx, 1              
+    mov ecx, resultmsg      
+    mov edx, 11              
+    int 0x80                 
+    mov eax, [result]
+    call inttostr
+    mov eax, 4             
+    mov ebx, 1               
+    mov ecx, result
+    mov edx, 4              
+    int 0x80               
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, newline
+    mov edx, 1
+    int 0x80
+    mov eax, 1              
+    xor ebx, ebx            
+    int 0x80                
+
+strtoint:
+    xor eax, eax             
+    xor ebx, ebx            
+    mov ebx, 10             
+
+convertloop:
+    movzx edx, byte [ecx]     
+    cmp edx, 0xA            
+    je doneconvert         
+    sub edx, '0'             
+    imul eax, eax, 10        
+    add eax, edx            
+    inc ecx                 
+    jmp convertloop         
+
+doneconvert:
+    ret                   
+
+inttostr:
+    mov ecx, result           
+    mov ebx, 10             
+    xor edx, edx          
+
+converttostr:
+    div ebx              
+    add dl, '0'           
+    dec ecx              
+    mov [ecx], dl        
+    test eax, eax           
+    jnz convert_to_str     
+    ret                   
+
