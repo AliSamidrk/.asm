@@ -1,0 +1,99 @@
+section .bss
+    number resb 4       
+    result resb 4       
+
+section .data
+    prompt db "number ", 0
+    msg_prime db "prime", 0
+    msg_not_prime db "notprime", 0
+    newline db 10, 0
+
+section .text
+    global _start
+
+_start:
+   
+    mov eax, 4          
+    mov ebx, 1          
+    mov ecx, prompt     
+    mov edx, 14         
+    int 0x80           
+    mov eax, 3         
+    mov ebx, 0          
+    mov ecx, number  
+    mov edx, 4         
+    int 0x80        
+
+    
+    mov ecx, number     
+    call strtoint         
+
+    mov ebx, eax         
+    call is_prime      
+    
+    cmp eax, 1         
+    je prime         
+    jmp not_prime       
+
+prime:
+    mov eax, 4          
+    mov ebx, 1          
+    mov ecx, msg_prime   
+    mov edx, 4        
+    int 0x80            
+    jmp end
+
+not_prime:
+    mov eax, 4           
+    mov ebx, 1          
+    mov ecx, msg_not_prime 
+    mov edx, 10          
+    int 0x80            
+
+end:
+   
+    mov eax, 1           
+    xor ebx, ebx         
+    int 0x80             
+
+strtoint:
+    xor eax, eax        
+    xor ebx, ebx        
+    mov ebx, 10        
+
+convert_loop:
+    movzx edx, byte [ecx] 
+    cmp edx, 0xA        
+    je done_convert     
+    sub edx, '0'        
+    imul eax, eax, 10   
+    add eax, edx        
+    inc ecx             
+    jmp convert_loop   
+
+done_convert:
+    ret                 
+
+is_prime:
+    cmp ebx, 1          
+    jle not_prime_num   
+    cmp ebx, 2          
+    je prime_num        
+    mov ecx, 2          
+
+check_loop:
+    mov eax, ebx        
+    cdq                 
+    div ecx             
+    cmp edx, 0          
+    je not_prime_num   
+    inc ecx            
+    cmp ecx, ebx        
+    jl check_loop      
+
+prime_num:
+    mov eax, 1          
+
+not_prime_num:
+    xor eax, eax        
+
