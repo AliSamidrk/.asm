@@ -1,99 +1,110 @@
-section .bss
-    number resb 4       
-    result resb 4       
-
 section .data
-    prompt db "number ", 0
-    msg_prime db "prime", 0
-    msg_not_prime db "notprime", 0
-    newline db 10, 0
+    prompt_msg db 'Enter a number: ', 0
+    prompt_len equ $ - prompt_msg
+
+    prime_msg db ' is a prime number.', 0Ah
+    prime_len equ $ - prime_msg
+
+    not_prime_msg db ' is not a prime number.', 0Ah
+    not_prime_len equ $ - not_prime_msg
+
+section .bss
+    buffer resb 10
+    number_value resd 1
+    input_length resd 1
 
 section .text
     global _start
 
 _start:
-   
-    mov eax, 4          
-    mov ebx, 1          
-    mov ecx, prompt     
-    mov edx, 14         
-    int 0x80           
-    mov eax, 3         
-    mov ebx, 0          
-    mov ecx, number  
-    mov edx, 4         
-    int 0x80        
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, prompt_msg
+    mov edx, prompt_len
+    int 0x80
 
-    
-    mov ecx, number     
-    call strtoint         
+    mov eax, 3
+    mov ebx, 0
+    mov ecx, buffer
+    mov edx, 10
+    int 0x80
 
-    mov ebx, eax         
-    call is_prime      
-    
-    cmp eax, 1         
-    je prime         
-    jmp not_prime       
+    mov esi, buffer
+    call asciitointeger
+    mov [number_value], eax
 
-prime:
-    mov eax, 4          
-    mov ebx, 1          
-    mov ecx, msg_prime   
-    mov edx, 4        
-    int 0x80            
-    jmp end
+    mov eax, [number_value]
+    cmp eax, 2
+    jl not_prime
+    cmp eax, 2
+    je prime
 
-not_prime:
-    mov eax, 4           
-    mov ebx, 1          
-    mov ecx, msg_not_prime 
-    mov edx, 10          
-    int 0x80            
-
-end:
-   
-    mov eax, 1           
-    xor ebx, ebx         
-    int 0x80             
-
-strtoint:
-    xor eax, eax        
-    xor ebx, ebx        
-    mov ebx, 10        
-
-convert_loop:
-    movzx edx, byte [ecx] 
-    cmp edx, 0xA        
-    je done_convert     
-    sub edx, '0'        
-    imul eax, eax, 10   
-    add eax, edx        
-    inc ecx             
-    jmp convert_loop   
-
-done_convert:
-    ret                 
-
-is_prime:
-    cmp ebx, 1          
-    jle not_prime_num   
-    cmp ebx, 2          
-    je prime_num        
-    mov ecx, 2          
+    mov ecx, 2
+    mov ebx, eax
 
 check_loop:
-    mov eax, ebx        
-    cdq                 
-    div ecx             
-    cmp edx, 0          
-    je not_prime_num   
-    inc ecx            
-    cmp ecx, ebx        
-    jl check_loop      
+    mov edx, 0
+    mov eax, [number_value]
+    div ecx
+    cmp edx, 0
+    je not_prime
+    inc ecx
+    cmp ecx, ebx
+    jl check_loop
+    jmp prime
 
-prime_num:
-    mov eax, 1          
+prime:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, buffer
+    mov edx, [input_length]
+    int 0x80
 
-not_prime_num:
-    xor eax, eax        
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, prime_msg
+    mov edx, prime_len
+    int 0x80
 
+    jmp end_program
+
+not_prime:
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, buffer
+    mov edx, [input_length]
+    int 0x80
+
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, not_prime_msg
+    mov edx, not_prime_len
+    int 0x80
+
+end_program:
+    mov eax, 1
+    mov ebx, 0
+    int 0x80
+
+asciitointeger:
+    mov eax, 0
+    mov ecx, 0
+
+asciitointeger_loop:
+    mov bl, byte [esi]
+    cmp bl, 0Ah
+    je asciitointeger_done
+    cmp bl, '0'
+    jl asciitointeger_done
+    cmp bl, '9'
+    jg asciitointeger_done
+    sub bl, '0'
+    imul eax, eax, 10
+    add eax, ebx
+    inc esi
+    inc ecx
+    jmp asciitointeger_loop
+
+asciitointeger_done:
+    mov [input_length], ecx
+    ret
